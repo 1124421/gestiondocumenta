@@ -1,0 +1,215 @@
+version: '3.9'
+
+# ============================================================
+# SIGD - Sistema Inteligente de Gestión Documental
+# Infraestructura completa de servicios
+# Levantar: docker-compose up -d
+# Ver logs: docker-compose logs -f [servicio]
+# Detener:  docker-compose down
+# ============================================================
+
+services:
+
+  # ──────────────────────────────────────────────────────────
+  # PostgreSQL 16 — Base de datos principal
+  # ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: sigd_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigd_db
+      POSTGRES_USER: sigd_user
+      POSTGRES_PASSWORD: sigd_password_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigd_user -d sigd_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - sigd_network
+
+  # ──────────────────────────────────────────────────────────
+  # Redis 7 — Caché, colas de trabajo y sesiones
+  # ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: sigd_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass sigd_redis_2024
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "sigd_redis_2024", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sigd_network
+
+  # ──────────────────────────────────────────────────────────
+  # MinIO — Almacenamiento S3-compatible para documentos
+  # API: http://localhost:9000
+  # Consola Web: http://localhost:9001
+  # ──────────────────────────────────────────────────────────
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: sigd_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: sigd_minio_admin
+      MINIO_ROOT_PASSWORD: sigd_minio_password_2024
+      MINIO_VOLUMES: /data
+      MINIO_SITE_NAME: sigd-storage
+    ports:
+      - "9000:9000"   # API S3
+      - "9001:9001"   # Consola Web
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sigd_network
+
+  # ──────────────────────────────────────────────────────────
+  # MinIO MC (Client) — Inicializa buckets automáticamente
+  # ──────────────────────────────────────────────────────────
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: sigd_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set sigd http://minio:9000 sigd_minio_admin sigd_minio_password_2024;
+      mc mb --ignore-existing sigd/sigd-documentos;
+      mc mb --ignore-existing sigd/sigd-thumbnails;
+      mc mb --ignore-existing sigd/sigd-temp;
+      mc anonymous set download sigd/sigd-thumbnails;
+      echo 'Buckets inicializados correctamente';
+      exit 0;
+      "
+    networks:
+      - sigd_network
+
+  # ──────────────────────────────────────────────────────────
+  # Elasticsearch 8 — Motor de búsqueda full-text + semántica
+  # API: http://localhost:9200
+  # ──────────────────────────────────────────────────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: sigd_elasticsearch
+    restart: unless-stopped
+    environment:
+      - node.name=sigd-es01
+      - cluster.name=sigd-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - sigd_network
+
+  # ──────────────────────────────────────────────────────────
+  # Kibana — Interfaz web para Elasticsearch (solo desarrollo)
+  # UI: http://localhost:5601
+  # ──────────────────────────────────────────────────────────
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: sigd_kibana
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=sigd-kibana
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'available'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - sigd_network
+    profiles:
+      - dev  # Solo se levanta con: docker-compose --profile dev up -d
+
+  # ──────────────────────────────────────────────────────────
+  # Mailhog — Servidor de correo para desarrollo (captura emails)
+  # SMTP: localhost:1025
+  # UI: http://localhost:8025
+  # ──────────────────────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: sigd_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - sigd_network
+    profiles:
+      - dev
+
+# ──────────────────────────────────────────────────────────
+# Volúmenes persistentes
+# ──────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# ──────────────────────────────────────────────────────────
+# Red interna para comunicación entre servicios
+# ──────────────────────────────────────────────────────────
+networks:
+  sigd_network:
+    driver: bridge
+    name: sigd_network

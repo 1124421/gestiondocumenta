@@ -1,0 +1,41 @@
+# ============================================================
+# ARCHIVO: infra/docker/Dockerfile.backend
+# PROPÓSITO: Imagen Docker para el backend NestJS en producción.
+#
+# ESTRATEGIA: Multi-stage build para imagen mínima y segura
+#
+# STAGE 1 - builder:
+#   Usa node:20-alpine como base
+#   Instala dependencias con npm ci (más rápido y determinístico)
+#   Compila TypeScript a JavaScript (npm run build)
+#
+# STAGE 2 - runner:
+#   Usa node:20-alpine (imagen limpia, sin dependencias de dev)
+#   Copia solo el resultado compilado del stage 1
+#   Copia solo las dependencias de producción
+#   Ejecuta el servidor con node dist/main.js
+#
+# BUENAS PRÁCTICAS:
+#   - NO ejecutar como root → usar usuario 'node' (UID 1000)
+#   - Usar .dockerignore para excluir node_modules, .env, etc.
+#   - Healthcheck para que Docker sabe si el contenedor está OK
+#   - EXPOSE solo el puerto necesario
+# ============================================================
+
+# TODO: Implementar Dockerfile multi-stage
+# FROM node:20-alpine AS builder
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm ci
+# COPY . .
+# RUN npm run build
+
+# FROM node:20-alpine AS runner
+# WORKDIR /app
+# RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+# COPY --from=builder /app/dist ./dist
+# COPY --from=builder /app/node_modules ./node_modules
+# USER nestjs
+# EXPOSE 3001
+# HEALTHCHECK ...
+# CMD ["node", "dist/main.js"]

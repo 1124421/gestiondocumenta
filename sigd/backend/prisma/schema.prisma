@@ -1,0 +1,648 @@
+// ============================================================
+// SIGD — Schema de Base de Datos Completo
+// Sistema Inteligente de Gestión Documental
+// ORM: Prisma | DB: PostgreSQL 16
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Rol {
+  ADMINISTRADOR
+  AUXILIAR_ARCHIVO
+  GERENCIA
+  AUDITOR
+  CONSULTA
+  INVITADO
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+  BLOQUEADO
+  PENDIENTE_ACTIVACION
+}
+
+enum EstadoExpediente {
+  ACTIVO
+  INACTIVO
+  PRESTADO
+  TRANSFERIDO
+  BAJA
+  EN_PROCESO
+}
+
+enum TipoDocumento {
+  PDF
+  WORD
+  EXCEL
+  POWERPOINT
+  IMAGEN
+  CORREO
+  VIDEO
+  AUDIO
+  ESCANEADO
+  OTRO
+}
+
+enum EstadoDocumento {
+  ACTIVO
+  INACTIVO
+  EN_REVISION
+  VENCIDO
+}
+
+enum AccionAudit {
+  LOGIN
+  LOGOUT
+  LOGIN_FALLIDO
+  CREAR
+  LEER
+  ACTUALIZAR
+  ELIMINAR
+  DESCARGAR
+  IMPRIMIR
+  BUSCAR
+  PRESTAMO_CREAR
+  PRESTAMO_DEVOLVER
+  TRANSFERIR
+  DIGITALIZAR
+  OCR_PROCESAR
+  EXPORTAR
+  MFA_SETUP
+  MFA_VERIFICAR
+  CAMBIO_PASSWORD
+  RESET_PASSWORD
+}
+
+enum EstadoPrestamo {
+  ACTIVO
+  DEVUELTO
+  VENCIDO
+  PERDIDO
+}
+
+enum TipoUbicacion {
+  ARCHIVO_ACTIVO
+  ARCHIVO_CENTRAL
+  ARCHIVO_HISTORICO
+}
+
+enum EstadoNotificacion {
+  NO_LEIDA
+  LEIDA
+  ARCHIVADA
+}
+
+enum TipoNotificacion {
+  PRESTAMO_VENCIDO
+  PRESTAMO_PROXIMO_VENCER
+  DIGITALIZACION_PENDIENTE
+  TRANSFERENCIA_PROXIMA
+  DUPLICADO_DETECTADO
+  SISTEMA
+  ALERTA
+}
+
+enum DisposicionFinal {
+  CONSERVACION_TOTAL
+  ELIMINACION
+  SELECCION
+  MICROFILMACION
+}
+
+enum TipoProceso {
+  ORDINARIO                      // Procesos Ordinarios
+  DEVOLUCION                     // Procesos de Devolución
+  LIQUIDACION                    // Procesos de Liquidación
+  COBRO_JURIDICO                 // Procesos de Cobro Jurídico
+  GARANTIA_SERVICIO              // Garantías de Servicio
+  INSOLVENCIA_LEY_1116           // Insolvencia/Reorganización Empresarial - Ley 1116 de 2006
+  INSOLVENCIA_PERSONA_LEY_1564   // Insolvencia Persona Natural con bienes - Ley 1564 de 2012
+  INSOLVENCIA_PERSONA_LEY_2445   // Insolvencia Persona Natural sin bienes - Ley 2445 de 2025
+}
+
+// ============================================================
+// MODELO: Sede
+// ============================================================
+model Sede {
+  id            String   @id @default(uuid())
+  nombre        String
+  codigo        String   @unique
+  direccion     String
+  ciudad        String
+  telefono      String?
+  email         String?
+  activa        Boolean  @default(true)
+
+  // Relaciones
+  pasillos      Pasillo[]
+  expedientes   Expediente[]
+  usuarios      Usuario[]
+  clientes      Cliente[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("sedes")
+}
+
+// ============================================================
+// MODELO: Pasillo (estructura física del archivo)
+// ============================================================
+model Pasillo {
+  id            String   @id @default(uuid())
+  nombre        String
+  codigo        String
+  descripcion   String?
+
+  sedeId        String
+  sede          Sede     @relation(fields: [sedeId], references: [id])
+  estantes      Estante[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@unique([codigo, sedeId])
+  @@map("pasillos")
+}
+
+// ============================================================
+// MODELO: Estante
+// ============================================================
+model Estante {
+  id            String   @id @default(uuid())
+  nombre        String
+  codigo        String
+  fila          Int
+  columna       Int
+  descripcion   String?
+
+  pasilloId     String
+  pasillo       Pasillo  @relation(fields: [pasilloId], references: [id])
+  cajas         Caja[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("estantes")
+}
+
+// ============================================================
+// MODELO: Caja
+// ============================================================
+model Caja {
+  id                String      @id @default(uuid())
+  numero            String
+  capacidadMaxima   Int         @default(10)
+  descripcion       String?
+  activa            Boolean     @default(true)
+
+  // Clasificación por tipo de proceso (procedimiento de organización y archivo)
+  tipoProceso       TipoProceso?
+  normativaAplicable String?    // Ej: "Ley 1116 de 2006", "Ley 1564 de 2012"
+  etiquetaFrontal   String?    // Texto para etiqueta frontal de la caja
+  etiquetaLateral   String?    // Texto para etiqueta lateral de la caja
+
+  estanteId         String
+  estante           Estante     @relation(fields: [estanteId], references: [id])
+  ubicacionesFisicas UbicacionFisica[]
+
+  creadoEn          DateTime    @default(now())
+  actualizadoEn     DateTime    @updatedAt
+
+  @@index([tipoProceso])
+  @@map("cajas")
+}
+
+// ============================================================
+// MODELO: UbicacionFisica — Coordenadas exactas de un expediente
+// ============================================================
+model UbicacionFisica {
+  id              String        @id @default(uuid())
+  numeroCarpeta   String
+  tipoUbicacion   TipoUbicacion @default(ARCHIVO_ACTIVO)
+  fechaIngreso    DateTime      @default(now())
+  fechaUltimaRevision DateTime?
+  observaciones   String?
+  activa          Boolean       @default(true)
+
+  cajaId          String
+  caja            Caja          @relation(fields: [cajaId], references: [id])
+
+  expedienteId    String?       @unique
+  expediente      Expediente?   @relation(fields: [expedienteId], references: [id])
+
+  historialMovimientos MovimientoFisico[]
+
+  creadoEn        DateTime      @default(now())
+  actualizadoEn   DateTime      @updatedAt
+
+  @@index([cajaId])
+  @@map("ubicaciones_fisicas")
+}
+
+// ============================================================
+// MODELO: MovimientoFisico — Historial de cambios de ubicación
+// ============================================================
+model MovimientoFisico {
+  id                  String    @id @default(uuid())
+  motivo              String
+  observaciones       String?
+
+  ubicacionFisicaId   String
+  ubicacionFisica     UbicacionFisica @relation(fields: [ubicacionFisicaId], references: [id])
+
+  responsableId       String
+  responsable         Usuario   @relation(fields: [responsableId], references: [id])
+
+  creadoEn            DateTime  @default(now())
+
+  @@map("movimientos_fisicos")
+}
+
+// ============================================================
+// MODELO: Usuario
+// ============================================================
+model Usuario {
+  id              String        @id @default(uuid())
+  nombre          String
+  apellido        String
+  email           String        @unique
+  passwordHash    String
+  rol             Rol           @default(CONSULTA)
+  estado          EstadoUsuario @default(ACTIVO)
+  telefono        String?
+  avatar          String?       // URL en MinIO
+
+  // MFA
+  mfaSecret       String?
+  mfaHabilitado   Boolean       @default(false)
+
+  // Tokens de seguridad
+  refreshTokenHash    String?
+  resetPasswordToken  String?
+  resetPasswordExpiry DateTime?
+  activationToken     String?
+
+  // Control de acceso
+  ultimoAcceso    DateTime?
+  intentosFallidos Int       @default(0)
+  bloqueadoHasta  DateTime?
+
+  sedeId          String?
+  sede            Sede?     @relation(fields: [sedeId], references: [id])
+
+  // Relaciones
+  prestamos               Prestamo[]       @relation("UsuarioPrestamo")
+  prestamosAprobados      Prestamo[]       @relation("UsuarioAprobador")
+  auditLogs               AuditLog[]
+  notificaciones          Notificacion[]
+  movimientosFisicos      MovimientoFisico[]
+  expedientesResponsable  Expediente[]
+  clientesResponsable     Cliente[]
+  documentosSubidos       Documento[]
+
+  creadoEn        DateTime  @default(now())
+  actualizadoEn   DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  @@index([email])
+  @@index([rol])
+  @@map("usuarios")
+}
+
+// ============================================================
+// MODELO: Serie Documental (TRD)
+// ============================================================
+model Serie {
+  id          String     @id @default(uuid())
+  codigo      String     @unique
+  nombre      String
+  descripcion String?
+  activa      Boolean    @default(true)
+
+  subseries   Subserie[]
+  expedientes Expediente[]
+
+  creadoEn    DateTime   @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("series")
+}
+
+// ============================================================
+// MODELO: Subserie Documental (TRD)
+// ============================================================
+model Subserie {
+  id            String     @id @default(uuid())
+  codigo        String
+  nombre        String
+  descripcion   String?
+  activa        Boolean    @default(true)
+
+  serieId       String
+  serie         Serie      @relation(fields: [serieId], references: [id])
+
+  tablaRetencion TablaRetencion?
+  expedientes    Expediente[]
+
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime   @updatedAt
+
+  @@unique([codigo, serieId])
+  @@map("subseries")
+}
+
+// ============================================================
+// MODELO: Tabla de Retención Documental (TRD)
+// ============================================================
+model TablaRetencion {
+  id                  String           @id @default(uuid())
+  version             String
+  vigente             Boolean          @default(true)
+
+  retencionArchivoActivo   Int         // años en archivo activo
+  retencionArchivoCentral  Int         // años en archivo central
+  disposicionFinal         DisposicionFinal
+  soporte                  String?     // papel, digital, ambos
+  procedimiento            String?     // descripción del procedimiento
+
+  subserieId          String           @unique
+  subserie            Subserie         @relation(fields: [subserieId], references: [id])
+
+  creadoEn            DateTime         @default(now())
+  actualizadoEn       DateTime         @updatedAt
+
+  @@map("tablas_retencion")
+}
+
+// ============================================================
+// MODELO: Cliente
+// ============================================================
+model Cliente {
+  id                  String    @id @default(uuid())
+  // Identificación
+  tipoIdentificacion  String    // CC, NIT, CE, PA, etc.
+  numeroIdentificacion String   @unique
+  digitoVerificacion  String?   // para NIT
+
+  // Datos personales / empresariales
+  tipoPersona         String    @default("NATURAL") // NATURAL, JURIDICA
+  nombre              String
+  apellido            String?
+  razonSocial         String?
+  nombreComercial     String?
+
+  // Contacto
+  email               String?
+  emailAdicional      String?
+  telefono            String?
+  telefonoMovil       String?
+  direccion           String?
+  ciudad              String?
+  pais                String?   @default("Colombia")
+
+  // Datos internos
+  codigoInterno       String?   @unique
+  palabrasClave       String[]  // array de tags
+  observaciones       String?
+
+  // Datos del contrato
+  numeroContrato      String?
+  fechaContrato       DateTime?
+  fechaVencimiento    DateTime?
+
+  responsableId       String?
+  responsable         Usuario?  @relation(fields: [responsableId], references: [id])
+
+  sedeId              String?
+  sede                Sede?     @relation(fields: [sedeId], references: [id])
+
+  // Relaciones
+  expediente          Expediente?
+
+  creadoEn            DateTime  @default(now())
+  actualizadoEn       DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  @@index([numeroIdentificacion])
+  @@index([nombre])
+  @@index([codigoInterno])
+  @@index([numeroContrato])
+  @@map("clientes")
+}
+
+// ============================================================
+// MODELO: Expediente (físico y/o digital)
+// ============================================================
+model Expediente {
+  id                  String           @id @default(uuid())
+  numero              String           @unique // EXP-2024-00127
+  estado              EstadoExpediente @default(ACTIVO)
+  tieneArchivioFisico Boolean          @default(false)
+  tieneArchivoDigital Boolean          @default(false)
+  folios              Int              @default(0)
+  rutaDigital         String?          // Ruta en MinIO: CLIENTES/{cedula}/
+  fechaApertura       DateTime         @default(now())
+  fechaCierre         DateTime?
+  observaciones       String?
+
+  // Clasificación por tipo de proceso
+  tipoProceso         TipoProceso?
+  normativaAplicable  String?          // Referencia legal: "Ley 1116 de 2006"
+
+  // Clasificación archivística
+  serieId             String?
+  serie               Serie?           @relation(fields: [serieId], references: [id])
+
+  subserieId          String?
+  subserie            Subserie?        @relation(fields: [subserieId], references: [id])
+
+  // Relaciones
+  clienteId           String           @unique
+  cliente             Cliente          @relation(fields: [clienteId], references: [id])
+
+  responsableId       String?
+  responsable         Usuario?         @relation(fields: [responsableId], references: [id])
+
+  sedeId              String?
+  sede                Sede?            @relation(fields: [sedeId], references: [id])
+
+  ubicacionFisica     UbicacionFisica?
+  documentos          Documento[]
+  prestamos           Prestamo[]
+  auditLogs           AuditLog[]
+
+  creadoEn            DateTime         @default(now())
+  actualizadoEn       DateTime         @updatedAt
+  deletedAt           DateTime?
+
+  @@index([numero])
+  @@index([estado])
+  @@index([clienteId])
+  @@map("expedientes")
+}
+
+// ============================================================
+// MODELO: Documento Digital
+// ============================================================
+model Documento {
+  id              String          @id @default(uuid())
+  nombre          String
+  nombreOriginal  String
+  tipoDocumento   TipoDocumento
+  estado          EstadoDocumento @default(ACTIVO)
+  version         Int             @default(1)
+  esVersionActual Boolean         @default(true)
+
+  // Almacenamiento MinIO
+  rutaMinio       String          // bucket/key
+  urlThumbnail    String?
+  tamanioBytes    Int
+  mimeType        String
+  hashSha256      String          // para detectar duplicados
+
+  // OCR y metadatos extraídos
+  textoOcr        String?         // texto extraído por OCR
+  metadatosIA     Json?           // metadata extraída por IA
+  palabrasClave   String[]        // tags extraídos
+
+  // Clasificación
+  tipoDocumental  String?         // contrato, factura, cedula, etc.
+  fechaDocumento  DateTime?       // fecha del documento en sí
+
+  // Relaciones
+  expedienteId    String
+  expediente      Expediente      @relation(fields: [expedienteId], references: [id])
+
+  subidoPorId     String
+  subidoPor       Usuario         @relation(fields: [subidoPorId], references: [id])
+
+  versionAnteriorId String?
+  // versiones anteriores se relacionan por expedienteId + nombre + versión
+
+  creadoEn        DateTime        @default(now())
+  actualizadoEn   DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  @@index([expedienteId])
+  @@index([tipoDocumento])
+  @@index([hashSha256])
+  @@map("documentos")
+}
+
+// Relación self-referencial de versiones (tabla puente)
+model DocumentoVersion {
+  id              String @id @default(uuid())
+  documentoId     String
+  versionId       String
+  creadoEn        DateTime @default(now())
+
+  @@unique([documentoId, versionId])
+  @@map("documentos_versiones")
+}
+
+// ============================================================
+// MODELO: Préstamo de Expediente Físico
+// ============================================================
+model Prestamo {
+  id              String         @id @default(uuid())
+  estado          EstadoPrestamo @default(ACTIVO)
+  motivo          String
+  observaciones   String?
+  fechaPrestamo   DateTime       @default(now())
+  fechaLimite     DateTime
+  fechaDevolucion DateTime?
+  dependencia     String?        // área que solicitó el préstamo
+
+  expedienteId    String
+  expediente      Expediente     @relation(fields: [expedienteId], references: [id])
+
+  // Quién retiró
+  solicitanteId   String
+  solicitante     Usuario        @relation("UsuarioPrestamo", fields: [solicitanteId], references: [id])
+
+  // Quién autorizó
+  aprobadoPorId   String?
+  aprobadoPor     Usuario?       @relation("UsuarioAprobador", fields: [aprobadoPorId], references: [id])
+
+  auditLogs       AuditLog[]
+
+  creadoEn        DateTime       @default(now())
+  actualizadoEn   DateTime       @updatedAt
+
+  @@index([estado])
+  @@index([expedienteId])
+  @@index([solicitanteId])
+  @@index([fechaLimite])
+  @@map("prestamos")
+}
+
+// ============================================================
+// MODELO: AuditLog — Registro inmutable de todas las acciones
+// NUNCA se eliminan registros de esta tabla
+// ============================================================
+model AuditLog {
+  id            String      @id @default(uuid())
+  accion        AccionAudit
+  entidad       String      // nombre del modelo: Cliente, Expediente, etc.
+  entidadId     String?     // ID del registro afectado
+  descripcion   String      // descripción legible de la acción
+  metadatos     Json?       // datos adicionales (cambios, valores anteriores)
+
+  // Contexto de red
+  ipAddress     String?
+  userAgent     String?
+
+  // Quien realizó la acción
+  usuarioId     String?
+  usuario       Usuario?    @relation(fields: [usuarioId], references: [id])
+
+  // Contexto adicional (opcional)
+  expedienteId  String?
+  expediente    Expediente? @relation(fields: [expedienteId], references: [id])
+
+  prestamoId    String?
+  prestamo      Prestamo?   @relation(fields: [prestamoId], references: [id])
+
+  creadoEn      DateTime    @default(now())
+
+  @@index([usuarioId])
+  @@index([entidad, entidadId])
+  @@index([accion])
+  @@index([creadoEn])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// MODELO: Notificacion
+// ============================================================
+model Notificacion {
+  id          String              @id @default(uuid())
+  titulo      String
+  mensaje     String
+  tipo        TipoNotificacion
+  estado      EstadoNotificacion  @default(NO_LEIDA)
+  enlace      String?             // URL a la que redirige al hacer click
+  metadatos   Json?
+
+  usuarioId   String
+  usuario     Usuario             @relation(fields: [usuarioId], references: [id])
+
+  leidaEn     DateTime?
+  creadoEn    DateTime            @default(now())
+
+  @@index([usuarioId, estado])
+  @@map("notificaciones")
+}

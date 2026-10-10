@@ -1,0 +1,295 @@
+ACTÚA COMO UN EQUIPO COMPLETO DE EXPERTOS
+EN DESARROLLO DE SOFTWARE, UX/UI, ARQUITECTURA EMPRESARIAL, GESTIÓN DOCUMENTAL E INTELIGENCIA ARTIFICIAL.
+No actúes únicamente como un programador.
+Quiero que trabajes como si fueras un equipo conformado por:
+•	Arquitecto de Software Senior.
+•	Ingeniero Full Stack Senior.
+•	Ingeniero DevOps.
+•	Especialista en Bases de Datos.
+•	Diseñador UX/UI.
+•	Especialista en Gestión Documental.
+•	Especialista en Seguridad Informática.
+•	Especialista en Inteligencia Artificial.
+•	Consultor de Transformación Digital.
+•	Auditor de Calidad de Software.
+El objetivo es diseñar un sistema empresarial de nivel profesional, moderno, escalable y preparado para el futuro.
+ 
+CONTEXTO DEL PROYECTO
+Necesito desarrollar un Sistema Inteligente de Gestión Documental (SIGD) para una empresa que actualmente administra expedientes físicos y digitales de sus clientes.
+Actualmente toda la documentación se encuentra organizada en carpetas físicas almacenadas dentro de cajas.
+Cada cliente posee un expediente físico y eventualmente un expediente digital.
+El problema actual es que encontrar un expediente toma mucho tiempo porque se debe buscar manualmente.
+El sistema debe permitir localizar cualquier expediente en segundos.
+ 
+OBJETIVOS PRINCIPALES
+El sistema debe permitir:
+•	Buscar un cliente por:
+•	Nombre
+•	Número de identificación
+•	Código interno
+•	Número de expediente
+•	Número de contrato
+•	Teléfono
+•	Correo
+•	Palabras clave y mostrar inmediatamente:
+•	Caja donde está almacenado.
+•	Número de carpeta.
+•	Estante.
+•	Fila.
+•	Columna.
+•	Sede.
+•	Archivo Activo.
+•	Archivo Inactivo.
+•	Estado del expediente.
+•	Responsable.
+Todo debe visualizarse en menos de 2 segundos.
+ 
+GESTIÓN DEL ARCHIVO FÍSICO
+Diseñar un módulo completo para administrar:
+Ubicación física.
+Caja.
+Carpeta.
+Archivador.
+Estante.
+Fila.
+Columna.
+Pasillo.
+Sede.
+Fecha de ingreso.
+Fecha de préstamo.
+Fecha de devolución.
+Estado.
+Observaciones.
+Responsable.
+Historial completo.
+Cada movimiento debe quedar registrado.
+ 
+GESTIÓN DEL ARCHIVO DIGITAL
+Cada cliente tendrá su expediente digital.
+El sistema permitirá almacenar:
+PDF
+Word
+Excel
+PowerPoint
+Imágenes
+Correos
+Videos
+Audios
+Documentos escaneados
+Todo organizado automáticamente mediante una estructura inteligente.
+Ejemplo:
+CLIENTES/
+ 
+El sistema deberá crear automáticamente las carpetas.
+ 
+DIGITALIZACIÓN
+Permitir:
+Escanear documentos.
+Subir PDF.
+OCR.
+Extraer texto automáticamente.
+Indexar documentos.
+Reconocer nombres.
+Reconocer números de identificación.
+Reconocer fechas.
+Reconocer contratos.
+Reconocer firmas.
+Etiquetado automático mediante IA.
+ 
+BUSCADOR INTELIGENTE
+Quiero un buscador tipo Google.
+Debe permitir escribir:
+"Contrato Juan Pérez"
+"Cédula 123456"
+"Factura marzo" "Contrato 2025" y encontrar los documentos correspondientes utilizando búsqueda semántica e indexación avanzada.
+ 
+DASHBOARD
+Diseñar un Dashboard moderno mostrando:
+Número total de clientes.
+Número de expedientes.
+Número de cajas.
+Espacio ocupado.
+Expedientes activos.
+Expedientes inactivos.
+Documentos digitalizados.
+Pendientes por digitalizar.
+Documentos prestados.
+Próximos vencimientos.
+Gráficos.
+Indicadores.
+KPIs.
+ 
+MÓDULO DE PRÉSTAMOS
+Cuando alguien retire una carpeta física:
+Registrar quién la retiró.
+Fecha.
+Hora.
+Motivo.
+Fecha límite.
+Responsable.
+Estado.
+El sistema debe impedir perder expedientes.
+ 
+TRAZABILIDAD
+Registrar absolutamente todo.
+Quién ingresó.
+Quién modificó.
+Quién eliminó.
+Quién descargó.
+Quién imprimió.
+Quién consultó.
+Dirección IP.
+Fecha.
+Hora.
+Historial completo.
+Nada debe perderse.
+ 
+GESTIÓN DOCUMENTAL
+Diseñar siguiendo buenas prácticas archivísticas.
+Implementar:
+Cuadro de Clasificación Documental.
+Series.
+Subseries.
+Tipos documentales.
+Versionado.
+Metadatos.
+Conservación.
+Retención.
+Disposición final.
+Transferencias.
+Archivo Activo.
+Archivo Central.
+Archivo Histórico.
+Tablas de Retención Documental (TRD).
+Tablas de Valoración Documental (TVD).
+Expediente Electrónico.
+Foliación.
+Radicación.
+ 
+INTELIGENCIA ARTIFICIAL
+Integrar IA para:
+Clasificar documentos automáticamente.
+Detectar documentos duplicados.
+Extraer información.
+Responder preguntas sobre documentos.
+Resumir expedientes.
+Generar alertas.
+Detectar inconsistencias.
+Sugerir ubicación documental.
+Buscar usando lenguaje natural.
+Asistente conversacional interno.
+ 
+NOTIFICACIONES
+Enviar alertas cuando:
+Un expediente salga.
+No sea devuelto.
+Falte digitalizar.
+Exista duplicidad.
+Se aproxime una transferencia documental.
+Haya vencimientos.
+ 
+USUARIOS
+Administrador.
+Auxiliar de Archivo.
+Gerencia.
+Auditor.
+Consulta.
+Invitado.
+Permisos granulares.
+ 
+SEGURIDAD
+Autenticación moderna.
+JWT.
+OAuth.
+MFA.
+Permisos por roles.
+Encriptación.
+Backups automáticos.
+Logs.
+Protección contra ataques.
+Control de sesiones.
+ 
+TECNOLOGÍAS RECOMENDADAS
+Frontend:
+Next.js
+React
+TypeScript
+Tailwind CSS
+Shadcn UI
+Framer Motion
+Backend:
+NestJS
+Node.js
+PostgreSQL
+Redis
+Prisma ORM
+Almacenamiento:
+S3 Compatible
+MinIO
+OCR:
+Tesseract OCR
+Azure Document Intelligence o Google Document AI (según presupuesto)
+Búsqueda:
+Elasticsearch u OpenSearch
+IA:
+OpenAI API
+Embeddings Vector Database Docker.
+Kubernetes.
+CI/CD.
+ 
+DISEÑO
+Interfaz extremadamente moderna.
+Minimalista.
+Corporativa.
+Oscura y clara.
+Animaciones suaves.
+Responsive.
+Accesible.
+Muy rápida.
+Inspirada en Notion, Linear, Stripe, Vercel y Microsoft 365.
+ 
+CALIDAD DEL SOFTWARE
+Arquitectura limpia.
+DDD.
+SOLID.
+Clean Code.
+Repository Pattern.
+CQRS cuando aporte valor.
+Escalable.
+Documentado.
+Pruebas unitarias.
+Pruebas de integración.
+Pruebas E2E.
+ 
+RESULTADOS ESPERADOS
+Quiero que desarrolles este proyecto desde cero como un producto empresarial de clase mundial.
+Necesito que entregues:
+1.	Análisis completo del negocio.
+2.	Requisitos funcionales.
+3.	Requisitos no funcionales.
+4.	Arquitectura.
+5.	Diseño de base de datos.
+6.	Modelo entidad-relación.
+7.	Diagramas UML.
+8.	Arquitectura de carpetas.
+9.	APIs REST.
+10.	Interfaces.
+11.	Wireframes.
+12.	Mockups.
+13.	Flujo de usuarios.
+14.	Plan de desarrollo por fases.
+15.	Roadmap.
+16.	Estrategia de despliegue.
+17.	Estrategia de seguridad.
+18.	Estrategia de copias de seguridad.
+19.	Estrategia de mantenimiento.
+20.	Estrategia de escalabilidad.
+21.	Plan de pruebas.
+22.	Documentación técnica.
+23.	Manual de usuario.
+24.	Manual de administrador.
+25.	Código limpio, comentado y listo para producción.
+No simplifiques ninguna respuesta.
+Piensa como si estuvieras desarrollando un software que competirá con los mejores sistemas de gestión documental del mercado.
+Cada decisión debe estar justificada técnica y funcionalmente.
+El resultado debe ser profesional, elegante, escalable y preparado para crecer durante los próximos 10 años.

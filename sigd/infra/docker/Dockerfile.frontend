@@ -1,0 +1,19 @@
+# ============================================================
+# ARCHIVO: infra/docker/Dockerfile.frontend
+# PROPÓSITO: Imagen Docker para el frontend Next.js en producción.
+#
+# ESTRATEGIA: Multi-stage build optimizado para Next.js
+#
+# STAGE 1 - deps: Instalar dependencias
+# STAGE 2 - builder: Compilar la aplicación con next build
+# STAGE 3 - runner: Imagen final mínima
+#
+# OPTIMIZACIONES:
+#   - Next.js standalone output (output: 'standalone' en next.config.ts)
+#     genera una carpeta con solo lo necesario para producción
+#   - Sin node_modules completo en la imagen final (más ligero)
+#   - Caché de capas Docker optimizado (package.json primero)
+# ============================================================
+
+# TODO: Implementar Dockerfile multi-stage para Next.js
+# Seguir la guía oficial: https://nextjs.org/docs/deployment#docker-image
